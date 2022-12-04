@@ -4,7 +4,7 @@
 Este programa foi criado para o sistema de medição de diagrama de radiação de antenas, no LabTelecom-FGA/UnB.
 O código está sendo aprimorado para resolver problemas de compatibilidade e trazer outras melhorias.
 
-Como a arquitetura será completamente alterada, este projeto não será alterado.
+Como a arquitetura será completamente alterada, este projeto não será atualizado.
 
 
 
