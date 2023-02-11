@@ -54,6 +54,76 @@ time_stamp=[]
 
 first_measure=True
 
+#definindo equipamentos
+
+class equipment:
+    def __init__(self, name):
+        self.name = name #nome do instrumento (livre)
+    
+    def connect(self, mode, addr): #conecta-se ao instrumento. Input: modo (modo de conexão): TCPIP, GPIB / addr (endereço do equipamento): IP, GPIB address 
+        rm = pyvisa.ResourceManager()
+        
+        match mode:
+            case "TCPIP":
+                self.inst = rm.open_resource('TCPIP0::'+addr+'::inst0::INSTR', read_termination='\n')
+            case "GPIB":
+                self.inst = rm.open_resource('TCPIP0::'+addr+'::inst0::INSTR', read_termination='\n') #verificar qual é o comando GPIB
+            case "serial":
+                pass
+            case _:
+                return -1
+        self.inst.write('*IDN?') #query ID
+        self.equip_id=self.inst.read()
+        return f"Device Connected. ID: {self.equip_id}"
+
+
+    def description(self):
+        return f"{self.name}. ID = {self.equip_id}"
+
+    def status(self):
+        pass
+
+class SA(equipment):
+        
+    def set_freq(self, freq):
+        self.inst.write(':SENSe:FREQuency:CENTer %G' % (freq))
+        
+    def set_span(self, freq_span):
+        self.inst.write(':SENSe:FREQuency:SPAN %G' % (freq_span))
+
+    def peak_search(self):
+        self.inst.write(':CALCulate:MARKer:ACTivate')
+        self.inst.write(':CALCulate:MARKer:FUNCtion:MAXimum')
+        self.inst.write(':CALCulate:MARKer:Y?')
+        return self.inst.read()
+
+
+class gerador(equipment):
+    
+    def set_freq(self, freq):
+        self.inst.write(':SENSe:FREQuency:CENTer %G' % (freq))
+        
+    def set_amplitude(self, amp):
+        pass
+
+
+class positioner(equipment):
+
+    def home(self):
+        pass
+
+    def set_position(self, phi, theta, alpha):
+        self.phi = phi
+        self.theta = theta
+        self.alpha = alpha
+
+    def set_speed(self, speed):
+        self.speed = speed
+
+
+
+
+
 #----------FUNCTIONS----------------------------
 
 #--------------commands--------------------------   
