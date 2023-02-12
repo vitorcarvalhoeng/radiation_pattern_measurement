@@ -92,13 +92,16 @@ class equipment:
     def status(self):
         pass
 
-class SA(equipment):
+class spectrum_analyser(equipment):
         
     def set_freq(self, freq):
         self.inst.write(':SENSe:FREQuency:CENTer %G' % (freq))
         
     def set_span(self, freq_span):
         self.inst.write(':SENSe:FREQuency:SPAN %G' % (freq_span))
+
+    def set_BW(self,bw):
+        pass
 
     def meas_peak(self):
         self.inst.write(':CALCulate:MARKer:ACTivate')
@@ -107,7 +110,7 @@ class SA(equipment):
         return self.inst.read()
 
 
-class gerador(equipment):
+class RF_generator(equipment):
     
     def set_freq(self, freq):
         self.inst.write(':SENSe:FREQuency:CENTer %G' % (freq))
@@ -137,6 +140,10 @@ class positioner(equipment):
         move(self.ser, 0, "stop")
 
 
+# atribuindo objetos
+SA = spectrum_analyser("SA_X")
+gen = RF_generator("gerador_x")
+apontador = positioner("posicionador_x")
 
 
 
@@ -172,47 +179,23 @@ def config_VISA(freq_center, equip_IP):
 # retorna um float com a magnitude medida no SA, em dBm
 # utiliza variáveis globais, altera apenas a informação de primeira medida
 
-def measure(freq_center): # measurement equipment control
-    global SA
-
-    global equipment
-    global first_measure
-    global num_samples
-    #freq_span=1e3 # arbitrary
-    global freq_span
-
+def measure(num_samples,first_measure): # measurement equipment control
+    
     if first_measure:
         print("First Measure")
         sleep(2)
         first_measure=False
 
-
-    num_samples, wait_time_phi,wait_time_all,margin_max,margin_step = infos.load_config()
-
     meas=np.ones(num_samples)    
 
     for i in range(0,num_samples):
-        SA.write(':CALCulate:MARKer:FUNCtion:MAXimum')
-        SA.write(':CALCulate:MARKer:Y?')
-        temp_values = SA.read()
-        #temp_values = SA.query_ascii_values(':CALCulate:MARKer:Y?')
-        
-        #temp_values = SA.query_ascii_values(':CALCulate:MARKer:Y?', converter='s', separator=', ', delay=None)
-        #print(temp_values)
+        temp_values = SA.meas_peak()
 
         meas[i] = float(temp_values)
         sleep(0.05)
-        #meas[i] = 10**((meas_data)/10.) #linear
-
-
-        
-
-    #mag_linear=np.mean(meas) 
-
-    #mag=10.*math.log10(mag_linear)
 
     mag = max(meas)
-    return mag
+    return mag, first_measure
 
 
 # funcão mover e medir
