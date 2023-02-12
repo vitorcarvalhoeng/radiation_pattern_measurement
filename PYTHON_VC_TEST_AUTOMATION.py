@@ -21,11 +21,14 @@ import pyvisa
 import visa
 
 # project functions
-from pointing_system import move 
+from pointing_system import move, start_serial
 import infos
 from aux_functions import sph2cart, float_range
 
 import threading
+
+import serial
+
 
 
 print(".........................")
@@ -60,18 +63,24 @@ class equipment:
     def __init__(self, name):
         self.name = name #nome do instrumento (livre)
     
-    def connect(self, mode, addr): #conecta-se ao instrumento. Input: modo (modo de conexão): TCPIP, GPIB / addr (endereço do equipamento): IP, GPIB address 
+    def connect(self,mode, addr,baud): #conecta-se ao instrumento. Input: modo (modo de conexão): TCPIP, GPIB / addr (endereço do equipamento): IP, GPIB address 
         rm = pyvisa.ResourceManager()
         
         match mode:
             case "TCPIP":
                 self.inst = rm.open_resource('TCPIP0::'+addr+'::inst0::INSTR', read_termination='\n')
+                self.present()
             case "GPIB":
                 self.inst = rm.open_resource('TCPIP0::'+addr+'::inst0::INSTR', read_termination='\n') #verificar qual é o comando GPIB
+                self.present()
             case "serial":
+                self.ser = start_serial(addr,baud)
+            case "sim": #simulated
                 pass
-            case _:
+            case _: #error
                 return -1
+
+    def SCPI_present(self):
         self.inst.write('*IDN?') #query ID
         self.equip_id=self.inst.read()
         return f"Device Connected. ID: {self.equip_id}"
@@ -91,7 +100,7 @@ class SA(equipment):
     def set_span(self, freq_span):
         self.inst.write(':SENSe:FREQuency:SPAN %G' % (freq_span))
 
-    def peak_search(self):
+    def meas_peak(self):
         self.inst.write(':CALCulate:MARKer:ACTivate')
         self.inst.write(':CALCulate:MARKer:FUNCtion:MAXimum')
         self.inst.write(':CALCulate:MARKer:Y?')
@@ -110,15 +119,23 @@ class gerador(equipment):
 class positioner(equipment):
 
     def home(self):
-        pass
+        move(self.ser, 0, "homing")
 
     def set_position(self, phi, theta, alpha):
         self.phi = phi
         self.theta = theta
         self.alpha = alpha
+        move(self.ser, [self.phi, self.theta, self.alpha, self.speed])
 
     def set_speed(self, speed):
         self.speed = speed
+
+    def set_ref(self):
+        move(self.ser,0,"set_ref")
+        
+    def stop(self):
+        move(self.ser, 0, "stop")
+
 
 
 
