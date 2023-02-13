@@ -64,30 +64,28 @@ class equipment:
         self.name = name #nome do instrumento (livre)
     
     def connect(self,mode, addr,baud): #conecta-se ao instrumento. Input: modo (modo de conexão): TCPIP, GPIB / addr (endereço do equipamento): IP, GPIB address 
-        rm = pyvisa.ResourceManager()
+        
         
         match mode:
             case "TCPIP":
+                rm = pyvisa.ResourceManager()
                 self.inst = rm.open_resource('TCPIP0::'+addr+'::inst0::INSTR', read_termination='\n')
-                self.present()
+                self.SCPI_present()
             case "GPIB":
+                rm = pyvisa.ResourceManager()
                 self.inst = rm.open_resource('TCPIP0::'+addr+'::inst0::INSTR', read_termination='\n') #verificar qual é o comando GPIB
-                self.present()
+                self.SCPI_present()
             case "serial":
-                self.ser = start_serial(addr,baud)
+                self.ser = start_serial(self.ser,addr,baud)
             case "sim": #simulated
-                pass
+                rm_sim = pyvisa.ResourceManager('@sim')
+                self.inst = rm_sim.open_resource('ASRL1::INSTR', read_termination='\n')
             case _: #error
                 return -1
 
     def SCPI_present(self):
-        self.inst.write('*IDN?') #query ID
-        self.equip_id=self.inst.read()
-        return f"Device Connected. ID: {self.equip_id}"
-
-
-    def description(self):
-        return f"{self.name}. ID = {self.equip_id}"
+        self.equip_id = self.inst.query("?IDN") #query ID
+        print(f"Device Connected. ID: {self.equip_id}")    
 
     def status(self):
         pass
@@ -128,7 +126,7 @@ class positioner(equipment):
         self.phi = phi
         self.theta = theta
         self.alpha = alpha
-        move(self.ser, [self.phi, self.theta, self.alpha, self.speed])
+        move(self.ser, [self.phi, self.theta, self.alpha, self.speed],"send_gcode")
 
     def set_speed(self, speed):
         self.speed = speed
@@ -144,8 +142,6 @@ class positioner(equipment):
 SA = spectrum_analyser("SA_X")
 gen = RF_generator("gerador_x")
 apontador = positioner("posicionador_x")
-
-
 
 
 #----------FUNCTIONS----------------------------
@@ -179,12 +175,12 @@ def config_VISA(freq_center, equip_IP):
 # retorna um float com a magnitude medida no SA, em dBm
 # utiliza variáveis globais, altera apenas a informação de primeira medida
 
-def measure(num_samples,first_measure): # measurement equipment control
+def measure(num_samples): # measurement equipment control
     
-    if first_measure:
-        print("First Measure")
-        sleep(2)
-        first_measure=False
+    # if first_measure:
+    #     print("First Measure")
+    #     sleep(2)
+    #     first_measure=False
 
     meas=np.ones(num_samples)    
 
@@ -195,7 +191,7 @@ def measure(num_samples,first_measure): # measurement equipment control
         sleep(0.05)
 
     mag = max(meas)
-    return mag, first_measure
+    return mag
 
 
 # funcão mover e medir
