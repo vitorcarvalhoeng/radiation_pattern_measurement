@@ -34,10 +34,12 @@ import infos
 # recebe:
 # String com a porta serial selecionada
 # Opjeto da UI (para atualização de informações)
-def start_serial(ser,port,baud):
+def start_serial(port,baud):
     #ui=ui_window      
     try:
+        print(port)
         ser = serial.Serial(port, baud, timeout=2)
+        print('Connected')
         # ui.listWidget_progress.addItem('Conectado!')
         # ui.refresh_text_box()
         # ui.listWidget_progress.scrollToBottom()
@@ -81,13 +83,14 @@ def Gcode_G1(coordinate):
 # Treatment of inputs recived from Arduino, returns 'ok'
 def Received(ser): 
     if (True):
-        while True:
-            rec = ser.readline().decode()
-            print('read:'+ rec)
-            if(rec.endswith('ok\n')):
-                # time.sleep(5)
-                print("Recived")
-                return "ok"
+        return "ok"
+        # while True:
+        #     rec = ser.readline().decode()
+        #     print('read:'+ rec)
+        #     if(rec.endswith('ok')):
+        #         # time.sleep(5)
+        #         print("Recived")
+        #         return "ok"
     else:
         return "Miss: Didn't recive Gcode"
 
@@ -221,7 +224,7 @@ def move(ser,coordinate_in, input_com):
     # start_serial(port)
     # global coordinate_in, input_comv
     if(input_com == "stop"):
-        EMERGENCY_PARSER()
+        EMERGENCY_PARSER(ser)
     elif(input_com == "reset"):
         Send_Reset(ser)
     elif(input_com == "homing"):
@@ -233,7 +236,7 @@ def move(ser,coordinate_in, input_com):
     elif(input_com == "homing_z"):
         Homing_z(ser)
     elif(input_com == "on_off_motor"):
-        On_Off_Steper(0)
+        On_Off_Steper(ser,0)
     elif(input_com == "send_gcode"):
         Send_Gcode(ser,Gcode_G1(coordinate_in))
         thread.start()

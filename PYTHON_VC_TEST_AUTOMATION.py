@@ -21,7 +21,7 @@ import pyvisa
 import visa
 
 # project functions
-from pointing_system import move, start_serial
+from pointing_system import move, start_serial, disconnect
 import infos
 from aux_functions import sph2cart, float_range
 
@@ -76,7 +76,7 @@ class equipment:
                 self.inst = rm.open_resource('TCPIP0::'+addr+'::inst0::INSTR', read_termination='\n') #verificar qual é o comando GPIB
                 self.SCPI_present()
             case "serial":
-                self.ser = start_serial(self.ser,addr,baud)
+                self.ser = start_serial(addr,baud)
             case "sim": #simulated
                 rm_sim = pyvisa.ResourceManager('@sim')
                 self.inst = rm_sim.open_resource('ASRL1::INSTR', read_termination='\n')
@@ -89,6 +89,9 @@ class equipment:
 
     def status(self):
         pass
+
+    def disconnect_equip(self):
+        disconnect(self.ser)
 
 class spectrum_analyser(equipment):
         
@@ -142,6 +145,10 @@ class positioner(equipment):
 SA = spectrum_analyser("SA_X")
 gen = RF_generator("gerador_x")
 apontador = positioner("posicionador_x")
+
+# apontador.disconnect_equip()
+apontador.connect("serial","/dev/ttyACM0",3000)
+apontador.home()
 
 
 #----------FUNCTIONS----------------------------
