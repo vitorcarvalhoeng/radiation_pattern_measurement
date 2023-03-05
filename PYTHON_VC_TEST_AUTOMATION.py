@@ -156,26 +156,6 @@ apontador.home()
 #--------------commands--------------------------   
 
 
-# configura o analisador de espectro utilizando comandos do pyvisa
-# configura frequência central, span e ativa o MARKer
-# recebe um inteiro 'freq_center' em Hz e uma string 'equip_IP' com o IP do analisador de espectro
-
-
-def config_VISA(freq_center, equip_IP):
-    global freq_span
-    global SA
-
-    rm = pyvisa.ResourceManager()
-    SA = rm.open_resource('TCPIP0::'+equip_IP+'::inst0::INSTR', read_termination='\n')
-    SA.write('*IDN?')
-    equip_id=SA.read()
-    print(equip_id)
-    SA.write(':SENSe:FREQuency:CENTer %G' % (freq_center))
-    SA.write(':SENSe:FREQuency:SPAN %G' % (freq_span))
-    SA.write(':CALCulate:MARKer:ACTivate')
-    print('Meaurement Device Configured')
-
-
 # função de medição
 # recebe inteiro 'freq_center' em Hz
 # realiza internamente a média da magnitude linear com o número de amostras configurado na UI
