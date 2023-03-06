@@ -180,6 +180,11 @@ def measure(num_samples): # measurement equipment control
     mag = max(meas)
     return mag
 
+def sweep_freq(start,stop,step):
+    global freq
+    for freq_i in range(int(start),int(stop+step),int(step)):
+        freq.append(freq_i)
+
 
 # funcão mover e medir
 # sincroniza movimento e medição
@@ -193,8 +198,8 @@ def move_and_measure():
     global f_opts
     global freq
     global time_stamp, wait_time_all
-
-    global phi,theta,alpha,speed
+    global phi, theta, alpha
+    
     global mag
     #updating movement e measurement
 
@@ -206,113 +211,31 @@ def move_and_measure():
     theta_show = [x - theta_center for x in theta]
     alpha_show = [x - alpha_center for x in alpha]
 
-    ui.listWidget_progress.addItem('......')
-    ui.listWidget_progress.addItem('Posição:')
-    ui.listWidget_progress.addItem('phi='+str(phi_show[-1])+', theta='+str(theta_show[-1])+', alpha='+str(alpha_show[-1]))
-    ui.listWidget_progress.addItem('...Movimentando...')
-    ui.listWidget_progress.scrollToBottom()
-    ui.refresh_text_box()
-
 
     print("Movement...")
 
-    thread = threading.Thread(target=move, args=[[phi[-1],theta[-1],alpha[-1],speed],"send_gcode", port])
 
-    thread.start()
+    i=0
 
-    #move([phi[-1],theta[-1],alpha[-1],speed],"send_gcode", port)
+    for i in range(0, len(phi)):
+        positioner.set_position(phi[i],theta[i],alpha[i])
+        
+        print("Waiting "+str(wait_time_all)+" seconds (all)")
+        sleep(wait_time_all) #waiting
 
-    print("Waiting "+str(wait_time_all)+" seconds (all)")
-    sleep(wait_time_all) #waiting
+        RF_generator.set_freq(freq[i])
 
-    sweep=0
+        print("Frequency set on generator")
 
-    running=True
-    first=True
+        SA.set_freq(freq[i])
 
-    while running:
-        time_now=strftime("%H-%M-%S", localtime())
+        print("Frequency set on analyzer")
 
-        if f_mode == "single":
-            f_center= float(f_opts[0])*1e9
-            mag.append(measure(f_center))
-            freq.append(int(f_center))
-            time_stamp.append(time_now)
+        mag.append(measure(num_samples))
 
-            if not first:
-                phi.append(phi[-1])
-                theta.append(theta[-1])
-                alpha.append(alpha[-1])
-            else:
-                first=False
+        print("Magnitude captured")
 
 
-            ui.listWidget_progress.addItem('freq='+str(freq[-1]/1e9)+" GHz")
-            ui.listWidget_progress.addItem("mag = " +str(mag[-1]))
-            ui.listWidget_progress.addItem("...")
-            ui.listWidget_progress.scrollToBottom()
-            ui.refresh_text_box()
-            print ('freq='+str(freq[-1]/1e9)+" GHz")
-            print ("mag = " + str(mag[-1]))
-            print ("...")
-
-
-        elif f_mode == "center-span": 
-            f_start = float(f_opts[0])*1e9-float(f_opts[1])*1e9/2
-            f_stop = float(f_opts[0])*1e9+float(f_opts[1])*1e9/2
-            f_step = float(f_opts[2])*1e9
-
-            for freq_i in range(int(f_start),int(f_stop+f_step),int(f_step)):
-                mag.append(measure(float(freq_i)))
-                freq.append(freq_i)
-                time_stamp.append(time_now)
-                ui.listWidget_progress.addItem('freq='+str(freq[-1]/1e9)+" GHz")
-                ui.listWidget_progress.addItem("mag = " +str(mag[-1]))
-                ui.listWidget_progress.addItem("...")
-                ui.listWidget_progress.scrollToBottom()
-                ui.refresh_text_box()
-                print ('freq='+str(freq[-1]/1e9)+" GHz")
-                print ("mag = " + str(mag[-1]))
-                print ("...")
-                if sweep > 0:
-                    phi.append(phi[-1])
-                    theta.append(theta[-1])
-                    alpha.append(alpha[-1])
-                sweep+=1
-        elif f_mode == "start-stop":
-            f_start = float(f_opts[0])*1e9
-            f_stop = float(f_opts[1])*1e9
-            f_step = float(f_opts[2])*1e9
-            for freq_i in range(int(f_start),int(f_stop+f_step),int(f_step)):
-                mag.append(measure(float(freq_i)))
-                freq.append(freq_i)
-                time_stamp.append(time_now)
-                ui.listWidget_progress.addItem('freq='+str(freq[-1]/1e9)+" GHz")
-                ui.listWidget_progress.addItem("mag = " +str(mag[-1]))
-                ui.listWidget_progress.addItem("...")
-                ui.listWidget_progress.scrollToBottom()
-                ui.refresh_text_box()
-                print ('freq='+str(freq[-1]/1e9)+" GHz")
-                print ("mag = " + str(mag[-1]))
-                print ("...")
-                
-                if sweep > 0:
-                    phi.append(phi[-1])
-                    theta.append(theta[-1])
-                    alpha.append(alpha[-1])
-
-
-                sweep+=1
-
-        running = thread.is_alive()
-    
-
-    thread.join()
-
-    ui.refresh_text_box()
-    ui.listWidget_progress.scrollToBottom()
-
-    print(" ")
 
 
 # exporta resultados para arquivo csv
@@ -395,6 +318,7 @@ def run_sweep(mode): # switch case function
     }
     func= switcher.get(mode, "Invalid sweep type")
     return func()
+    
 
 # função de sweep em um eixo
 # recebe 1 inteiro e 3 floats, respectivamente:
@@ -402,40 +326,39 @@ def run_sweep(mode): # switch case function
 # realiza as operações com a variável global correspondente ao eixo indicado para gerar os angulos a serem apontados
 # chama função move_and_measure para executar os comandos finais
 
-def sweep_1ax(axis1,start,stop,step): # 1 axis sweep
-    global mag, phi, theta, alpha
-    global phi_start,theta_start,alpha_start
-    global ui
-    global wait_time_phi
-    i=0
-    ui.progressBar_total.setValue(0)
-    ui.progressBar_partial.setValue(0)
-    ui.refresh_text_box()
-    progress=((stop-start)/step)
+def sweep_1ax(axis,start,stop,step): # 1 axis sweep
+    global phi, theta, alpha
+    # global phi_start,theta_start,alpha_start
+    # global ui
+    # global wait_time_phi
+
+    # ui.progressBar_total.setValue(0)
+    # ui.progressBar_partial.setValue(0)
+    # ui.refresh_text_box()
+    # progress=((stop-start)/step)
 
 
     #for ax1 in range(start,stop+step,step):
-    for ax1 in float_range(int(start),stop+step,str(step)):
+    for ax in float_range(int(start),stop+step,str(step)):
         #recording angles
-        if axis1==1:
-            phi.append(ax1)
+        if axis==1: # phi
+            phi.append(ax)
             if i>0:                
                 theta.append(theta[-1])
                 alpha.append(alpha[-1])
             elif i==0:
                 theta.append(theta_start)
                 alpha.append(alpha_start)
-        elif axis1==2:            
-            theta.append(ax1)
+        elif axis==2:  # theta          
+            theta.append(ax)
             if i>0:
                 phi.append(phi[-1])
                 alpha.append(alpha[-1])
             elif i==0:
                 phi.append(phi_start)
                 alpha.append(alpha_start)
-        elif axis1==3:
-            
-            alpha.append(ax1)
+        elif axis==3: # alpha            
+            alpha.append(ax)
             if i>0:
                 phi.append(phi[-1])
                 theta.append(theta[-1])
@@ -443,19 +366,9 @@ def sweep_1ax(axis1,start,stop,step): # 1 axis sweep
                 theta.append(theta_start)
                 phi.append(phi_start)
 
-        move_and_measure()
 
-        global f_mode 
-      
-        #if f_mode == "single":
-        plot_2d(0) #plotting points
 
-        i+=1
-        if progress==0:
-            progress=1
-        ui.progressBar_partial.setValue(100/(progress/(i)))
-        ui.progressBar_total.setValue(100/(progress/(i)))
-        ui.refresh_text_box()
+    # return phi[-1], theta[-1], alpha[-1] #retornando ultimo valor da fila atualizado
 
 
 # função de sweep em 2 eixos
