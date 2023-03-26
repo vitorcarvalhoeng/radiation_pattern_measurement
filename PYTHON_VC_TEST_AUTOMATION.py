@@ -11,6 +11,11 @@ import math
 from time import strftime, localtime, sleep
 import sys
 
+from datetime import datetime
+
+
+
+
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import pyqtgraph as pg
@@ -24,6 +29,8 @@ import threading
 
 import SCPI_devices
 import serial_devices
+
+
 
 
 print(".........................")
@@ -43,6 +50,7 @@ alpha=[]
 
 freq=[]
 time_stamp=[]
+date_time=[]
 
 first_measure=True
 
@@ -132,6 +140,9 @@ def move_and_measure():
 
         print("Magnitude captured")
 
+        #timestamp
+        date_time.append = datetime.now() # Getting the current date and time
+        time_stamp.append(datetime.timestamp(date_time)) # getting the timestamp
 
 
 
