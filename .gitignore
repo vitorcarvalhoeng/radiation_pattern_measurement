@@ -163,3 +163,6 @@ cython_debug/
 
 *.out
 *.vscode/
+
+*~lock*
+*.ods

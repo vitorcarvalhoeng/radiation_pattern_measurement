@@ -13,7 +13,7 @@ import sys
 
 from datetime import datetime
 
-
+import pandas as pd
 
 
 from mpl_toolkits.mplot3d import Axes3D
@@ -62,6 +62,14 @@ RF_gen = SCPI_devices.RF_generator("gerador_x")
 positioner = serial_devices.positioner("posicionador_X")
 
 
+#importing sequencing parameters into a general table
+sequencing = pd.read_csv('parameters_list.csv')
+
+phi = sequencing.phi
+theta = sequencing.theta
+alpha = sequencing.alpha
+freq = sequencing.freq
+
 
 #----------FUNCTIONS----------------------------
 
@@ -90,11 +98,6 @@ def measure(num_samples): # measurement equipment control
 
     mag = max(meas)
     return mag
-
-def sweep_freq(start,stop,step):
-    global freq
-    for freq_i in range(int(start),int(stop+step),int(step)):
-        freq.append(freq_i)
 
 
 # funcão mover e medir
