@@ -37,12 +37,6 @@ freq_span = 100e3
 #----------INITIALIZING VARIABLES----------------------------
 
 mag=[]
-start1=0
-stop1=0
-step1=0
-start2=0
-stop2=0
-step2 = 0
 phi=[]
 theta=[]
 alpha=[]
@@ -66,19 +60,10 @@ positioner = serial_devices.positioner("posicionador_X")
 #--------------commands--------------------------   
 
 
-
-# configura o analisador de espectro utilizando comandos do pyvisa
-# configura frequência central, span e ativa o MARKer
-# recebe um inteiro 'freq_center' em Hz e uma string 'equip_IP' com o IP do analisador de espectro
-
-
-
-
 # função de medição
-# recebe inteiro 'freq_center' em Hz
-# realiza internamente a média da magnitude linear com o número de amostras configurado na UI
+# recebe inteiro 'num_samples'
+# realiza internamente a média da magnitude linear com o número de amostras
 # retorna um float com a magnitude medida no SA, em dBm
-# utiliza variáveis globais, altera apenas a informação de primeira medida
 
 def measure(num_samples): # measurement equipment control
     
@@ -108,18 +93,12 @@ def sweep_freq(start,stop,step):
 # sincroniza movimento e medição
 # não recebe argumentos, utiliza as variáveis globais, configuradas por outras funções
 # não retorna valores, modifica as variáveis globais
-# atualiza informações na UI à medida que realiza as operações
 
 def move_and_measure():
-    global port
-    global f_mode
-    global f_opts
     global freq
     global time_stamp, wait_time_all
     global phi, theta, alpha
-    
     global mag
-    #updating movement e measurement
 
 
     phi_center, theta_center, alpha_center = infos.load_cal()
@@ -135,7 +114,7 @@ def move_and_measure():
 
     i=0
 
-    for i in range(0, len(phi)):
+    for i in range(0, len(phi)): # values area appended to the general table
         positioner.set_position(phi[i],theta[i],alpha[i])
         
         print("Waiting "+str(wait_time_all)+" seconds (all)")
