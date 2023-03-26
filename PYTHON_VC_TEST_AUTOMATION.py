@@ -23,6 +23,7 @@ from aux_functions import sph2cart, float_range
 import threading
 
 import SCPI_devices
+import serial_devices
 
 
 print(".........................")
@@ -55,8 +56,8 @@ first_measure=True
 
 # atribuindo objetos
 SA = SCPI_devices.spectrum_analyser("SA_X")
-gen = SCPI_devices.RF_generator("gerador_x")
-
+RF_gen = SCPI_devices.RF_generator("gerador_x")
+positioner = serial_devices.positioner("posicionador_X")
 
 
 
@@ -89,7 +90,7 @@ def measure(num_samples): # measurement equipment control
     meas=np.ones(num_samples)    
 
     for i in range(0,num_samples):
-        temp_values = SA.meas_peak()
+        temp_values = SA.peak_search()
 
         meas[i] = float(temp_values)
         sleep(0.05)
@@ -140,7 +141,7 @@ def move_and_measure():
         print("Waiting "+str(wait_time_all)+" seconds (all)")
         sleep(wait_time_all) #waiting
 
-        RF_generator.set_freq(freq[i])
+        RF_gen.set_freq(freq[i])
 
         print("Frequency set on generator")
 
