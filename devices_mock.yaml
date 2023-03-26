@@ -1,0 +1,167 @@
+spec: "1.0"
+devices:
+  gerador:
+    eom:
+      GPIB INSTR:
+        q: "\n"  # MAKE SURE! that this matches the terminator of the driver!
+        r: "\n"
+    error: ERROR
+    dialogues:
+      - q: "*IDN?"
+        r: "Gerador (Simulated)"
+
+
+    properties:
+
+      # peak:
+      #   default: 0
+      #   getter:
+      #     q: ":CALCulate:MARKer:Y?"  # the set/get commands have to simply be copied over from the driver
+      #     r: "3"
+
+      output:
+        default: 0
+        setter:
+          q: ":OUTPut:STATe {:d}"  # the set/get commands have to simply be copied over from the driver
+
+      modulation:
+        default: 0
+        setter:
+          q: ":OUTPut:MODulation:STATe {:d}"
+
+      power:
+        default: -125
+        setter:
+          q: ":SOURce:POWer:LEVel:IMMediate:AMPLitude {:.2f} DBM"      
+
+
+
+        
+
+
+  analisador:
+    eom:
+      GPIB INSTR:
+        q: "\n"  # MAKE SURE! that this matches the terminator of the driver!
+        r: "\n"
+    error: ERROR
+    dialogues:
+      - q: "*IDN?"
+        r: "Analisador (simulated)"
+        
+    properties:
+
+      peak:
+        default: 0
+        getter:
+          q: ":CALCulate:MARKer:Y?"  # the set/get commands have to simply be copied over from the driver
+          r: "3"
+        setter:
+          q: "ATTN ALL {:02.0f}"
+
+     
+
+      frequency:
+        default: 100.0
+        getter:
+          q: "?FREQ"
+          r: "{:.2f}"
+        setter:
+          q: ":SENSe:FREQuency:CENTer {:.2f}"
+
+      marker:
+        default: "MAXimum"
+        setter: 
+          q: ":CALCulate:MARKer:PEAK:SEARch:MODE {:s}"
+
+      span:
+        default: 10000000
+        setter: 
+          q: ":SENSe:FREQuency:SPAN {:.2f}"
+
+      bw:
+        default: 10000
+        setter: 
+          q: ":SENSe:BANDwidth:RESolution {:.2f}"  
+
+
+
+
+
+
+
+
+
+
+  osciloscopio:
+    eom:
+      GPIB INSTR:
+        q: "\n"  # MAKE SURE! that this matches the terminator of the driver!
+        r: "\n"
+    error: ERROR
+    dialogues:
+      - q: "*IDN?"
+        r: "Osciloscopio (Simulated)"
+        
+    properties:
+
+      CH1:
+        default: 0
+        getter:
+          q: ":MEASure:VAMPlitude? CHANNEL1"  # the set/get commands have to simply be copied over from the driver
+          r: 1000
+        setter:
+          q: "ATTN ALL {:02.0f}"
+
+      CH2:
+        default: 0
+        getter:
+          q: ":MEASure:VAMPlitude? CHANNEL2"  # the set/get commands have to simply be copied over from the driver
+          r: 2000
+        setter:
+          q: "ATTN ALL {:02.0f}"
+
+      CH3:
+        default: 0
+        getter:
+          q: ":MEASure:VAMPlitude? CHANNEL3"  # the set/get commands have to simply be copied over from the driver
+          r: 3000
+        setter:
+          q: "ATTN ALL {:02.0f}"
+
+      CH4:
+        default: 0
+        getter:
+          q: ":MEASure:VAMPlitude? CHANNEL4"  # the set/get commands have to simply be copied over from the driver
+          r: 4000
+        setter:
+          q: "ATTN ALL {:02.0f}"  
+
+      measure_results:
+        default: 0
+        getter:
+          q: ":MEASure:RESults?"  # the set/get commands have to simply be copied over from the driver
+          # r: 101, 202, 303, 404,1, 2, 3, 4,11, 22, 33, 44,111, 222, 333, 444,1111, 2222, 3333, 4444,11111, 22222, 33333, 44444,111111, 222222, 333333, 444444
+          r: "1234123412341234123412341234"
+        setter:
+          q: "ATTN ALL {:02.0f}"  
+
+
+      reset_statistics:
+        default: 0
+        setter:
+          q: ":MEASure:STATistics:RESet"
+
+
+
+                           
+
+resources:
+  GPIB::8::INSTR:
+    device: gerador
+
+  GPIB::9::INSTR:
+    device: analisador
+
+  GPIB::10::INSTR:
+    device: osciloscopio

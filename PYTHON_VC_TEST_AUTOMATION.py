@@ -15,20 +15,14 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import pyqtgraph as pg
 
-#import keysight.command_expert as ce #python 2
-# import keysight.command_expert_py3 as ce # python 3
-import pyvisa
-import visa
-
 # project functions
-from pointing_system import move, start_serial, disconnect
+
 import infos
 from aux_functions import sph2cart, float_range
 
 import threading
 
-import serial
-
+import SCPI_devices
 
 
 print(".........................")
@@ -57,98 +51,13 @@ time_stamp=[]
 
 first_measure=True
 
-#definindo equipamentos
-
-class equipment:
-    def __init__(self, name):
-        self.name = name #nome do instrumento (livre)
-    
-    def connect(self,mode, addr,baud): #conecta-se ao instrumento. Input: modo (modo de conexão): TCPIP, GPIB / addr (endereço do equipamento): IP, GPIB address 
-        
-        
-        match mode:
-            case "TCPIP":
-                rm = pyvisa.ResourceManager()
-                self.inst = rm.open_resource('TCPIP0::'+addr+'::inst0::INSTR', read_termination='\n')
-                self.SCPI_present()
-            case "GPIB":
-                rm = pyvisa.ResourceManager()
-                self.inst = rm.open_resource('TCPIP0::'+addr+'::inst0::INSTR', read_termination='\n') #verificar qual é o comando GPIB
-                self.SCPI_present()
-            case "serial":
-                self.ser = start_serial(addr,baud)
-            case "sim": #simulated
-                rm_sim = pyvisa.ResourceManager('@sim')
-                self.inst = rm_sim.open_resource('ASRL1::INSTR', read_termination='\n')
-            case _: #error
-                return -1
-
-    def SCPI_present(self):
-        self.equip_id = self.inst.query("?IDN") #query ID
-        print(f"Device Connected. ID: {self.equip_id}")    
-
-    def status(self):
-        pass
-
-    def disconnect_equip(self):
-        disconnect(self.ser)
-
-class spectrum_analyser(equipment):
-        
-    def set_freq(self, freq):
-        self.inst.write(':SENSe:FREQuency:CENTer %G' % (freq))
-        
-    def set_span(self, freq_span):
-        self.inst.write(':SENSe:FREQuency:SPAN %G' % (freq_span))
-
-    def set_BW(self,bw):
-        pass
-
-    def meas_peak(self):
-        self.inst.write(':CALCulate:MARKer:ACTivate')
-        self.inst.write(':CALCulate:MARKer:FUNCtion:MAXimum')
-        self.inst.write(':CALCulate:MARKer:Y?')
-        return self.inst.read()
-
-
-class RF_generator(equipment):
-    
-    def set_freq(self, freq):
-        self.inst.write(':SENSe:FREQuency:CENTer %G' % (freq))
-        
-    def set_amplitude(self, amp):
-        pass
-
-
-class positioner(equipment):
-
-    def home(self):
-        move(self.ser, 0, "homing")
-
-    def set_position(self, phi, theta, alpha):
-        self.phi = phi
-        self.theta = theta
-        self.alpha = alpha
-        move(self.ser, [self.phi, self.theta, self.alpha, self.speed],"send_gcode")
-
-    def set_speed(self, speed):
-        self.speed = speed
-
-    def set_ref(self):
-        move(self.ser,0,"set_ref")
-        
-    def stop(self):
-        move(self.ser, 0, "stop")
 
 
 # atribuindo objetos
-SA = spectrum_analyser("SA_X")
-gen = RF_generator("gerador_x")
-apontador = positioner("posicionador_x")
+SA = SCPI_devices.spectrum_analyser("SA_X")
+gen = SCPI_devices.RF_generator("gerador_x")
 
-# apontador.disconnect_equip()
-apontador.connect("serial","/dev/ttyACM0",3000)
-apontador.home()
+
 
 
 #----------FUNCTIONS----------------------------
@@ -161,19 +70,6 @@ apontador.home()
 # recebe um inteiro 'freq_center' em Hz e uma string 'equip_IP' com o IP do analisador de espectro
 
 
-def config_VISA(freq_center, equip_IP):
-    global freq_span
-    global SA
-
-    rm = pyvisa.ResourceManager()
-    SA = rm.open_resource('TCPIP0::'+equip_IP+'::inst0::INSTR', read_termination='\n')
-    SA.write('*IDN?')
-    equip_id=SA.read()
-    print(equip_id)
-    SA.write(':SENSe:FREQuency:CENTer %G' % (freq_center))
-    SA.write(':SENSe:FREQuency:SPAN %G' % (freq_span))
-    SA.write(':CALCulate:MARKer:ACTivate')
-    print('Meaurement Device Configured')
 
 
 # função de medição
