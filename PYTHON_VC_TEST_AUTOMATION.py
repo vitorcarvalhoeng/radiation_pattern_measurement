@@ -324,21 +324,27 @@ def plot_3d(init,final):
 # função procura máximo
 # recebe:
 # inteiros: phi0,theta0,alpha0. (pontos de máximo da simulação)
-# inteiros: speed,freq. (velocidade de movimento, frequência de medição, em Hz)
-# strings: port, equipment_meas (porta do equipamento apontador e IP do SA)
+# inteiros: freq. (frequência de medição, em Hz)
 # retorna inteiros phi_max e theta_max, correspondentes aos ângulos de máximo ganho encontrados
 
 
-def search_max(phi0,theta0,alpha0,speed,freq,port, equipment_meas):
+def search_max(phi0,theta0,alpha0,freq):
     
     global equipment
     global margin_max
 
     num_samples, wait_time_phi,wait_time_all,margin_max, margin_step = infos.load_config()
 
-    equipment=equipment_meas
-    config_VISA(freq,equipment)
 
+    #setting frequency on instruments
+    f_center= float(freq)*1e9
+    RF_gen.set_freq(f_center)
+    SA.set_freq(f_center)
+
+    RF_gen.RF_on() #turning RF on
+
+
+    #stablishing limits for search on axis
     phi_min=0
     phi_max=360
 
@@ -350,19 +356,17 @@ def search_max(phi0,theta0,alpha0,speed,freq,port, equipment_meas):
     elif apont_equip == "rotor":
         theta_max=180
 
+    #margins for searching
     range_phi_d=margin_max
     range_phi_u=margin_max
 
     range_theta_d=margin_max
     range_theta_u=margin_max
 
-    # limits correction
-
+    # values correction
     phi0=int(phi0)
     theta0=int(theta0)
     alpha0=int(alpha0)
-    speed=int(speed)
-
 
     if phi0-range_phi_d < phi_min:
         range_phi_d=abs(phi0)
@@ -374,42 +378,40 @@ def search_max(phi0,theta0,alpha0,speed,freq,port, equipment_meas):
     elif theta0+range_theta_u > theta_max:
         range_theta_u=theta_max-theta0
 
-
-
     #phi sweep   
+    #finding the maximum measured magnitude on phi axis around phi0
+
     mag_test=[]
     phi_test=[]
-
-
+  
     #for phi in range(phi0-range_phi_d,phi0+range_phi_u,1):
     for phi in float_range(int(phi0-range_phi_d),phi0+range_phi_u,str(margin_step)):
-        move([phi, theta0, alpha0, speed],"send_gcode", port)
-        f_center= float(freq)*1e9
+        positioner.set_position(phi, theta0, alpha0)
+        sleep(wait_time_all) # settling time
         phi_test.append(phi)
-        mag_test.append(measure(f_center))
-
+        mag_test.append(measure(num_samples))
 
     index_max=np.argmax(mag_test)
     phi_max=phi_test[index_max]
-
-    print(phi_max)
-
+    print("phi max = " + str(phi_max))
 
     #theta sweep
+    #finding the maximum measured magnitude on theta axis aroung theta0, on the phi_max position
     mag_test=[]
     theta_test=[]
 
     #for theta in range(theta0-range_theta_d,theta0+range_theta_u,1):
     for theta in float_range(int(theta0-range_theta_d),theta0+range_theta_u,str(margin_step)):
-        move([phi_max, theta, alpha0, speed],"send_gcode", port)
-        f_center= float(freq)*1e9
+        positioner.set_position(phi_max, theta, alpha0)
+        sleep(wait_time_all) # settling time
         theta_test.append(theta)
-        mag_test.append(measure(f_center))
-
+        mag_test.append(measure(num_samples))
 
     index_max=np.argmax(mag_test)
     theta_max=theta_test[index_max]
+    print("theta max = " + str(theta_max))
 
+    RF_gen.RF_off() #turning RF off
 
     return phi_max,theta_max
 
