@@ -54,6 +54,7 @@ SA = SCPI_devices.spectrum_analyser("SA_X")
 RF_gen = SCPI_devices.RF_generator("gerador_x")
 positioner = serial_devices.positioner("posicionador_X")
 
+RF_gen.RF_off()
 
 #importing sequencing parameters into a general table
 sequencing = pd.read_csv('parameters_list.csv')
@@ -116,6 +117,8 @@ def move_and_measure():
 
     i=0
 
+    RF_gen.RF_on() #turning on RF output
+
     for i in range(0, len(phi)): # values area appended to the general table
         positioner.set_position(phi[i],theta[i],alpha[i])
         
@@ -138,6 +141,7 @@ def move_and_measure():
         date_time.append = datetime.now() # Getting the current date and time
         time_stamp.append(datetime.timestamp(date_time)) # getting the timestamp
 
+    RF_gen.RF_off() #turning off RF output
 
 
 # exporta resultados para arquivo csv
