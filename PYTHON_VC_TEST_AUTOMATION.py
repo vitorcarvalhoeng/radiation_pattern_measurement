@@ -3,13 +3,10 @@
 # Author: Vitor Carvalho de Almeida
 # Local: UnB_Gama-LabTelecom --- Autotrac
 
-import os
 import numpy as np
 import csv
-from functools import partial
 import math
-from time import strftime, localtime, sleep
-import sys
+from time import sleep
 
 from datetime import datetime
 
@@ -25,13 +22,8 @@ import pyqtgraph as pg
 import infos
 from aux_functions import sph2cart, float_range
 
-import threading
-
 import SCPI_devices
 import serial_devices
-
-
-
 
 print(".........................")
 print ("Running Sequence")
@@ -40,6 +32,7 @@ print(" ")
 
 #---------------INPUTS--------------------------------
 freq_span = 100e3
+num_samples, wait_time_phi,wait_time_all,margin_max, margin_step = infos.load_config()
 
 #----------INITIALIZING VARIABLES----------------------------
 
@@ -119,9 +112,7 @@ def move_and_measure():
     theta_show = [x - theta_center for x in theta]
     alpha_show = [x - alpha_center for x in alpha]
 
-
     print("Movement...")
-
 
     i=0
 
@@ -204,6 +195,9 @@ def reset():
     first_measure = True
 
 
+def update_configs(): # update global configuration variables with information from csv file
+    global num_samples, wait_time_phi,wait_time_all,margin_max, margin_step
+    num_samples, wait_time_phi,wait_time_all,margin_max, margin_step = infos.load_config()
 
 #-------------------plots-------------------
 
@@ -329,20 +323,14 @@ def plot_3d(init,final):
 
 
 def search_max(phi0,theta0,alpha0,freq):
+    global num_samples, wait_time_phi,wait_time_all,margin_max, margin_step
     
-    global equipment
-    global margin_max
-
-    num_samples, wait_time_phi,wait_time_all,margin_max, margin_step = infos.load_config()
-
-
     #setting frequency on instruments
     f_center= float(freq)*1e9
     RF_gen.set_freq(f_center)
     SA.set_freq(f_center)
 
     RF_gen.RF_on() #turning RF on
-
 
     #stablishing limits for search on axis
     phi_min=0
@@ -414,127 +402,3 @@ def search_max(phi0,theta0,alpha0,freq):
     RF_gen.RF_off() #turning RF off
 
     return phi_max,theta_max
-
-
-#------------------------MAIN-----------------------------
-
-# função principal do código, organiza opções definidas na UI e inicia o processo de medição, chamando as outras funções de comando
-#
-# recebe:
-# inteiros: ax_options1,ax_options2 - opções dos eixos (1=phi, 2=theta, 3=alpha)
-# inteiro: ax_mode - modo dos eixos (1, 2 ou 3 eixos)
-# vetor: angles - opções de início, fim e passo para cada eixo
-# string: freq_mode - opção de varredura na frequência ('single', 'center-span', 'start-stop')
-# vetor: freq_opts - valores para frequência (central/start, span/final, passo)
-# inteiro: spd - velocidade de movimentação do braço mecânico (somente usada braço 3 eixos)
-# string: output_filename - nome do arquivo csv de saída
-# classe: ui_obj - objeto da UI
-# string: port_dev - porta serial à qual está conectada o equipamento apontador
-#
-# reotrna vetor de vetores: mag (magnitudes medidas). phi ,theta, alpha (angulos apontados), pointing_angle (ângulos de máximo ganho)
-
-def start_measurement(ax_options1,ax_options2,ax_mode,angles,freq_mode,freq_opts, spd, output_filename,ui_obj, port_dev):
-    global start1, stop1, step1
-    global start2, stop2, step2
-
-    global phi_start, phi_stop, phi_step
-    global theta_start, theta_stop, theta_step
-    global alpha_start, alpha_stop, alpha_step
-    
-    global f_mode, f_opts
-
-    global axis_options1, axis_options2, axis_mode
-
-    global speed
-    global ui
-    global equipment
-
-    global port
-
-    global num_samples, wait_time_phi,wait_time_all, margin_max
-
-    num_samples, wait_time_phi,wait_time_all,margin_max,margin_step = infos.load_config()
-
-    port = port_dev
-
-    ui = ui_obj
-
-    equipment=ui.lineEdit_ce_filename.text()
-    
-    ui.listWidget_progress.addItem('Processo iniciado...')
-    ui.listWidget_progress.scrollToBottom()
-    ui.refresh_text_box()
-
-
-    #-----getting informations from GUI-------
-
-    axis_options1= ax_options1
-    axis_options2=ax_options2
-    axis_mode = ax_mode
-
-
-    f_mode = freq_mode
-    f_opts = freq_opts
-
-    speed=spd
-
-    phi_start=angles[0]
-    phi_stop=angles[1]
-    phi_step=angles[2]
-
-    theta_start=angles[3]
-    theta_stop=angles[4]
-    theta_step=angles[5]
-
-    alpha_start=angles[6]
-    alpha_stop=angles[7]
-    alpha_step=angles[8]
-
-    f_center= float(f_opts[0])*1e9
-    config_VISA(f_center,equipment)
-
-
-    #--------running------------------------
-
-
-    start1, stop1, step1 = limits(axis_options1) #defining limits
-    start2, stop2, step2 = limits(axis_options2)
-
-    run_sweep(axis_mode) #move and measure sequence
-
-    #--------exporting data------------------------
-    print(output_filename)
-    export_csv(output_filename) # exporting results to file
-
-
-    index_max=np.argmax(mag)
-
-    phi_center, theta_center, alpha_center = infos.load_cal()
-
-
-    # applying reference offset
-    phi_show = [x - phi_center for x in phi]
-    theta_show = [x - theta_center for x in theta]
-    alpha_show = [x - alpha_center for x in alpha]
-    
-
-    #pointing_angle=[eixo_plot[index_max],theta[index_max],alpha[index_max],freq[index_max]]
-    pointing_angle=[phi_show[index_max],theta_show[index_max],alpha_show[index_max],freq[index_max]]
-
-    #--------finishing------------------------
-    print(" ")
-    print ("... FINISHED!")
-    ui.listWidget_progress.addItem('.......................')
-    ui.listWidget_progress.addItem('Processo Finalizado')
-    ui.listWidget_progress.addItem('.......................')
-    ui.listWidget_progress.scrollToBottom()
-    ui.refresh_text_box()
-
-    
-    if axis_mode==2:
-        print(" ")
-        print ("Close figure window to exit")
-        plot_3d(0,1)
-
-    return mag,phi,theta,alpha,pointing_angle
-
