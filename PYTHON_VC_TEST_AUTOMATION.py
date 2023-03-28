@@ -25,6 +25,12 @@ from aux_functions import sph2cart, float_range
 import SCPI_devices
 import serial_devices
 
+
+from mock_serial import MockSerial
+from serial import Serial
+
+
+
 print(".........................")
 print ("Running Sequence")
 print(" ")
@@ -53,6 +59,17 @@ first_measure=True
 SA = SCPI_devices.spectrum_analyser("SA_X")
 RF_gen = SCPI_devices.RF_generator("gerador_x")
 positioner = serial_devices.positioner("posicionador_X")
+
+device = MockSerial()
+device.open()
+
+
+serial = Serial(device.port)
+
+...
+
+
+
 
 RF_gen.RF_off()
 
@@ -406,3 +423,8 @@ def search_max(phi0,theta0,alpha0,freq):
     RF_gen.RF_off() #turning RF off
 
     return phi_max,theta_max
+
+
+
+serial.close()
+device.close()

@@ -83,14 +83,14 @@ def Gcode_G1(coordinate):
 # Treatment of inputs recived from Arduino, returns 'ok'
 def Received(ser): 
     if (True):
-        return "ok"
-        # while True:
-        #     rec = ser.readline().decode()
-        #     print('read:'+ rec)
-        #     if(rec.endswith('ok')):
-        #         # time.sleep(5)
-        #         print("Recived")
-        #         return "ok"
+        # return "ok"
+        while True:
+            rec = ser.readline().decode()
+            print('read:'+ rec)
+            if(rec.endswith('ok\n')):
+                # time.sleep(5)
+                print("Recived")
+                return "ok"
     else:
         return "Miss: Didn't recive Gcode"
 

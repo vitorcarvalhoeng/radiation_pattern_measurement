@@ -2,18 +2,39 @@
 # project functions
 from pointing_system import move, start_serial, disconnect
 
+from mock_serial import MockSerial
+from serial import Serial
+
+
+
 
 #definindo equipamentos
 
-class equipment:
+class equipment(object):
     def __init__(self, name):
         self.name = name #nome do instrumento (livre)
+
+    connection_mode = 'r' # 'r' = real, 's' = simulated
     
     def connect(self,mode, addr,baud): #conecta-se ao instrumento. Input: modo (modo de conexão): TCPIP, GPIB / addr (endereço do equipamento): IP, GPIB address 
 
         match mode:
             case "serial":
                 self.ser = start_serial(addr,baud)
+                self.connection_mode = 'r'
+            case "serial_mock": #simulated device
+                self.device_mock = MockSerial()
+                stub = self.device_mock.stub(
+                    receive_bytes=b'G28\n',
+                    send_bytes=b'ok\n'
+                )
+
+                self.device_mock.open()
+                self.ser = Serial(self.device_mock.port)
+                self.connection_mode = 's'
+                print("Serial mock device connected.")
+
+                
             case _: #error
                 return -1
 
@@ -24,7 +45,12 @@ class equipment:
         pass
 
     def disconnect_equip(self):
-        disconnect(self.ser)
+        if self.connection_mode == 'r':
+            disconnect(self.ser)
+        elif self.connection_mode == 's':    
+            self.ser.close()
+            self.device_mock.close()
+            print("Serial mock device disconnected.")
 
 
 class positioner(equipment):
