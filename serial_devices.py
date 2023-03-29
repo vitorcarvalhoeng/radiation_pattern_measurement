@@ -5,7 +5,7 @@ from pointing_system import move, start_serial, disconnect
 from mock_serial import MockSerial
 from serial import Serial
 
-
+import serial_devices_mock as ser_mock
 
 
 #definindo equipamentos
@@ -23,18 +23,9 @@ class equipment(object):
                 self.ser = start_serial(addr,baud)
                 self.connection_mode = 'r'
             case "serial_mock": #simulated device
-                self.device_mock = MockSerial()
-                stub = self.device_mock.stub(
-                    receive_bytes=b'G28\n',
-                    send_bytes=b'ok\n'
-                )
-
-                self.device_mock.open()
-                self.ser = Serial(self.device_mock.port)
+                self.ser, self.device_mock = ser_mock.gcode_positioner()
                 self.connection_mode = 's'
-                print("Serial mock device connected.")
-
-                
+                print("Serial mock device connected.")                
             case _: #error
                 return -1
 
