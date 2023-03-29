@@ -6,7 +6,7 @@
 import numpy as np
 import csv
 import math
-from time import sleep
+from time import sleep, strftime, localtime
 
 from datetime import datetime
 
@@ -169,6 +169,7 @@ def import_sequencing(filename): #reads the input csv file and stores the parame
 
 def export_csv(filename): # file export function
     global mag, phi, theta, alpha, freq
+    global date_time, time_stamp
 
     phi_center, theta_center, alpha_center = infos.load_cal()
 
@@ -176,11 +177,11 @@ def export_csv(filename): # file export function
 
     with open(filename, mode='w', newline='') as diagram:
         wr = csv.writer(diagram, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        wr.writerow(["phi","theta","alpha" ,"freq","mag","time_stamp"]) # writing csv header
+        wr.writerow(["phi","theta","alpha" ,"freq","mag","date_time","time_stamp"]) # writing csv header
         print("Measured points:")
         print("(phi,theta,alpha,freq,E)")
         for i in range(0,len(mag)): # writing rolls for each direction
-            export_data=[phi[i]-phi_center,theta[i]-theta_center,alpha[i]-alpha_center,freq[i],mag[i],time_stamp[i]] #organizing data lines
+            export_data=[phi[i]-phi_center,theta[i]-theta_center,alpha[i]-alpha_center,freq[i],mag[i],date_time[i],time_stamp[i]] #organizing data lines
             print (export_data)
             wr.writerow(export_data)
     diagram.close() #closing file
@@ -189,9 +190,9 @@ def export_csv(filename): # file export function
     copy_filename=strftime("DIAGRAMA_autosaved_date-%Y-%m-%d_time-%H-%M-%S.csv", localtime())
     with open(copy_filename, mode='w', newline='') as diagram:
         wr = csv.writer(diagram, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        wr.writerow(["phi","theta","alpha" ,"freq","mag","time_stamp"]) # writing csv header
+        wr.writerow(["phi","theta","alpha" ,"freq","mag","date_time","time_stamp"]) # writing csv header
         for i in range(0,len(mag)): # writing rolls for each direction
-            export_data=[phi[i]-phi_center,theta[i]-theta_center,alpha[i]-alpha_center,freq[i],mag[i],time_stamp[i]] #organizing data lines
+            export_data=[phi[i]-phi_center,theta[i]-theta_center,alpha[i]-alpha_center,freq[i],mag[i],date_time[i],time_stamp[i]] #organizing data lines
             print (export_data)
             wr.writerow(export_data)
     diagram.close() #closing file
