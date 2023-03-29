@@ -85,11 +85,12 @@ def Received(ser):
     if (True):
         # return "ok"
         while True:
+            print('Reading serial...')
             rec = ser.readline().decode()
             print('read:'+ rec)
             if(rec.endswith('ok\n')):
-                # time.sleep(5)
                 print("Recived")
+
                 return "ok"
     else:
         return "Miss: Didn't recive Gcode"
@@ -102,13 +103,21 @@ def Received(ser):
 def Send_Gcode(ser,send_coord):
     print("Sending Gcode")
     #ser.write("M121\n".encode())  # Disable endstop
-    
-    print("M121")
+    # print("M121")
     ser.write(send_coord.encode())
-    ser.write("M400\n".encode())
     print(send_coord)
+    time.sleep(1)
+    Received(ser)
+    time.sleep
+    # Received(ser)
+    # ser.write("M400\n".encode())
+    # print("M400")
+    # Received(ser)
+    
 
-    return Received(ser)
+    
+
+    # return Received(ser)
 #####################################################################################
 
 # Envia o comando de procura dos sensores fim de curso (homming) geral
@@ -239,8 +248,8 @@ def move(ser,coordinate_in, input_com):
         On_Off_Steper(ser,0)
     elif(input_com == "send_gcode"):
         Send_Gcode(ser,Gcode_G1(coordinate_in))
-        thread.start()
-        thread.join()
+        # thread.start()
+        # thread.join()
     elif(input_com == "set_ref"):
         Set_Reference(ser)
     else:

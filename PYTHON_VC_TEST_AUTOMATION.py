@@ -49,25 +49,8 @@ first_measure=True
 
 
 
-# atribuindo objetos
-SA = SCPI_devices.spectrum_analyser("SA_X")
-RF_gen = SCPI_devices.RF_generator("gerador_x")
-positioner = serial_devices.positioner("posicionador_X")
-
-RF_gen.RF_off()
-
-#importing sequencing parameters into a general table
-sequencing = pd.read_csv('parameters_list.csv')
-
-phi = sequencing.phi
-theta = sequencing.theta
-alpha = sequencing.alpha
-freq = sequencing.freq
-
 
 #----------FUNCTIONS----------------------------
-
-#--------------commands--------------------------   
 
 
 # função de medição
@@ -101,7 +84,7 @@ def measure(num_samples): # measurement equipment control
 
 def move_and_measure():
     global freq
-    global time_stamp, wait_time_all
+    global time_stamp, date_time, wait_time_all
     global phi, theta, alpha
     global mag
 
@@ -125,11 +108,11 @@ def move_and_measure():
         print("Waiting "+str(wait_time_all)+" seconds (all)")
         sleep(wait_time_all) #waiting
 
-        RF_gen.set_freq(freq[i])
+        RF_gen.set_freq(int(freq[i]))
 
         print("Frequency set on generator")
 
-        SA.set_freq(freq[i])
+        SA.set_freq(int(freq[i]))
 
         print("Frequency set on analyzer")
 
@@ -138,20 +121,20 @@ def move_and_measure():
         print("Magnitude captured")
 
         #timestamp
-        date_time.append = datetime.now() # Getting the current date and time
-        time_stamp.append(datetime.timestamp(date_time)) # getting the timestamp
+        date_time.append(datetime.now()) # Getting the current date and time
+        time_stamp.append(datetime.timestamp(date_time[i])) # getting the timestamp
 
     RF_gen.RF_off() #turning off RF output
 
 
 def import_sequencing(filename): #reads the input csv file and stores the parameters on the lists
-    global mag, phi, theta, alpha, freq
-
     input_data = pd.read_csv(filename)
     phi = input_data.phi
     theta = input_data.theta
     alpha = input_data.alpha
     freq = input_data.freq
+
+    return phi, theta, alpha, freq
 
     #In python if you open a file but forget to close it, 
     # python will close it for you at the end of the function block 
@@ -421,3 +404,29 @@ def search_max(phi0,theta0,alpha0,freq):
     RF_gen.RF_off() #turning RF off
 
     return phi_max,theta_max
+
+
+
+###########  MAIN ##########
+
+# atribuindo objetos
+SA = SCPI_devices.spectrum_analyser("SA_X")
+RF_gen = SCPI_devices.RF_generator("gerador_x")
+positioner = serial_devices.positioner("posicionador_X")
+
+SA.connect("sim",9)
+RF_gen.connect("sim",8)
+positioner.connect("serial_mock",0,0)
+
+RF_gen.RF_off()
+
+filename = 'parameters_list.csv'
+phi, theta, alpha, freq = import_sequencing(filename)
+
+
+move_and_measure()
+
+
+SA.disconnect_equip()
+RF_gen.disconnect_equip()
+positioner.disconnect_equip()

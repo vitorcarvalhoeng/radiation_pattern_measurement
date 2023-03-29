@@ -23,7 +23,7 @@ class equipment(object):
                 self.ser = start_serial(addr,baud)
                 self.connection_mode = 'r'
             case "serial_mock": #simulated device
-                self.ser, self.device_mock = ser_mock.gcode_positioner()
+                self.ser = ser_mock.gcode_positioner()
                 self.connection_mode = 's'
                 print("Serial mock device connected.")                
             case _: #error
@@ -40,11 +40,12 @@ class equipment(object):
             disconnect(self.ser)
         elif self.connection_mode == 's':    
             self.ser.close()
-            self.device_mock.close()
             print("Serial mock device disconnected.")
 
 
 class positioner(equipment):
+
+    speed = 100
 
     def home(self):
         move(self.ser, 0, "homing")
