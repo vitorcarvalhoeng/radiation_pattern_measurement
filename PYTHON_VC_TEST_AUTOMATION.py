@@ -25,12 +25,6 @@ from aux_functions import sph2cart, float_range
 import SCPI_devices
 import serial_devices
 
-
-from mock_serial import MockSerial
-from serial import Serial
-
-
-
 print(".........................")
 print ("Running Sequence")
 print(" ")
@@ -59,17 +53,6 @@ first_measure=True
 SA = SCPI_devices.spectrum_analyser("SA_X")
 RF_gen = SCPI_devices.RF_generator("gerador_x")
 positioner = serial_devices.positioner("posicionador_X")
-
-device = MockSerial()
-device.open()
-
-
-serial = Serial(device.port)
-
-...
-
-
-
 
 RF_gen.RF_off()
 
@@ -161,6 +144,20 @@ def move_and_measure():
     RF_gen.RF_off() #turning off RF output
 
 
+def import_sequencing(filename): #reads the input csv file and stores the parameters on the lists
+    global mag, phi, theta, alpha, freq
+
+    input_data = pd.read_csv(filename)
+    phi = input_data.phi
+    theta = input_data.theta
+    alpha = input_data.alpha
+    freq = input_data.freq
+
+    #In python if you open a file but forget to close it, 
+    # python will close it for you at the end of the function block 
+    # (during garbage collection).
+    #ref:https://stackoverflow.com/questions/29416968/python-pandas-does-read-csv-keep-file-open
+
 # exporta resultados para arquivo csv
 # recebe string com nome do arquivo a ser gerado
 # salva um arquivo csv contendo as informações para cada ponto medido:
@@ -197,7 +194,7 @@ def export_csv(filename): # file export function
             export_data=[phi[i]-phi_center,theta[i]-theta_center,alpha[i]-alpha_center,freq[i],mag[i],time_stamp[i]] #organizing data lines
             print (export_data)
             wr.writerow(export_data)
-    diagram.close() #closing file    
+    diagram.close() #closing file
 
 
 # função 'reset'
@@ -423,8 +420,3 @@ def search_max(phi0,theta0,alpha0,freq):
     RF_gen.RF_off() #turning RF off
 
     return phi_max,theta_max
-
-
-
-serial.close()
-device.close()
