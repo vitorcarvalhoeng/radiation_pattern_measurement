@@ -24,6 +24,7 @@ from aux_functions import sph2cart, float_range
 
 import SCPI_devices
 import serial_devices
+import os
 
 print(".........................")
 print ("Running Sequence")
@@ -87,7 +88,6 @@ def move_and_measure():
     global time_stamp, date_time, wait_time_all
     global phi, theta, alpha
     global mag
-    global output_file
 
     phi_center, theta_center, alpha_center = infos.load_cal()
 
@@ -124,7 +124,10 @@ def move_and_measure():
         date_time.append(datetime.now()) # Getting the current date and time
         time_stamp.append(datetime.timestamp(date_time[i])) # getting the timestamp
 
+        export_csv('a',True)
+
     RF_gen.RF_off() #turning off RF output
+    
 
 
 def import_sequencing(filename): #reads the input csv file and stores the parameters on the lists
@@ -158,7 +161,7 @@ def export_csv(filename, safe_copy): # file export function
 
     #remaping angles from center calibration
 
-    if (safe_copy == 0):
+    if (safe_copy == False):
         with open(filename, mode='w', newline='') as diagram:
             wr = csv.writer(diagram, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             wr.writerow(["phi","theta","alpha" ,"freq","mag","date_time","time_stamp"]) # writing csv header
@@ -167,9 +170,11 @@ def export_csv(filename, safe_copy): # file export function
                 wr.writerow(export_data)
         diagram.close() #closing file
 
-    elif (safe_copy == 1):
+    elif (safe_copy == True):
         #saving a copy file for safety
-        copy_filename=strftime("DIAGRAMA_autosaved_date-%Y-%m-%d_time-%H-%M-%S.csv", localtime())
+        if not os.path.exists('./autosaved'):
+            os.makedirs('./autosaved')
+        copy_filename=strftime("./autosaved/autosaved_date-%Y-%m-%d_time-%H-%M-%S.csv", localtime())
         with open(copy_filename, mode='w', newline='') as diagram:
             wr = csv.writer(diagram, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             wr.writerow(["phi","theta","alpha" ,"freq","mag","date_time","time_stamp"]) # writing csv header
@@ -424,9 +429,10 @@ RF_gen.RF_off()
 filename = 'parameters_list.csv'
 phi, theta, alpha, freq = import_sequencing(filename)
 
+output_filename = 'output.csv'
 
 move_and_measure()
-
+export_csv(output_filename, False)
 
 SA.disconnect_equip()
 RF_gen.disconnect_equip()
