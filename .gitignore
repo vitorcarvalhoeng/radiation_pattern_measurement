@@ -166,3 +166,10 @@ cython_debug/
 
 *~lock*
 *.ods
+
+
+### auxiliary files
+
+/results/
+/autosaved/
+parameters_list.csv
