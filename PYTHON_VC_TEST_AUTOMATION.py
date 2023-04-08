@@ -7,11 +7,9 @@ import numpy as np
 import csv
 import math
 from time import sleep, strftime, localtime
-
+import os
 from datetime import datetime
-
 import pandas as pd
-
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -21,10 +19,10 @@ import pyqtgraph as pg
 
 import infos
 from aux_functions import sph2cart, float_range
-
+                
 import SCPI_devices
 import serial_devices
-import os
+
 
 print(".........................")
 print ("Running Sequence")
@@ -47,9 +45,6 @@ time_stamp=[]
 date_time=[]
 
 first_measure=True
-
-
-
 
 #----------FUNCTIONS----------------------------
 
