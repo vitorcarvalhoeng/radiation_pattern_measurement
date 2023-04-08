@@ -87,7 +87,7 @@ def move_and_measure():
     global time_stamp, date_time, wait_time_all
     global phi, theta, alpha
     global mag
-
+    global output_file
 
     phi_center, theta_center, alpha_center = infos.load_cal()
 
@@ -150,7 +150,7 @@ def import_sequencing(filename): #reads the input csv file and stores the parame
 # não retorna valores
 # utiliza variáveis globais, mas nao as altera
 
-def export_csv(filename): # file export function
+def export_csv(filename, safe_copy): # file export function
     global mag, phi, theta, alpha, freq
     global date_time, time_stamp
 
@@ -158,27 +158,28 @@ def export_csv(filename): # file export function
 
     #remaping angles from center calibration
 
-    with open(filename, mode='w', newline='') as diagram:
-        wr = csv.writer(diagram, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        wr.writerow(["phi","theta","alpha" ,"freq","mag","date_time","time_stamp"]) # writing csv header
-        print("Measured points:")
-        print("(phi,theta,alpha,freq,E)")
-        for i in range(0,len(mag)): # writing rolls for each direction
-            export_data=[phi[i]-phi_center,theta[i]-theta_center,alpha[i]-alpha_center,freq[i],mag[i],date_time[i],time_stamp[i]] #organizing data lines
-            print (export_data)
-            wr.writerow(export_data)
-    diagram.close() #closing file
+    if (safe_copy == 0):
+        with open(filename, mode='w', newline='') as diagram:
+            wr = csv.writer(diagram, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            wr.writerow(["phi","theta","alpha" ,"freq","mag","date_time","time_stamp"]) # writing csv header
+            for i in range(0,len(mag)): # writing rolls for each direction
+                export_data=[phi[i]-phi_center,theta[i]-theta_center,alpha[i]-alpha_center,freq[i],mag[i],date_time[i],time_stamp[i]] #organizing data lines
+                wr.writerow(export_data)
+        diagram.close() #closing file
 
-    #saving a copy file for safety
-    copy_filename=strftime("DIAGRAMA_autosaved_date-%Y-%m-%d_time-%H-%M-%S.csv", localtime())
-    with open(copy_filename, mode='w', newline='') as diagram:
-        wr = csv.writer(diagram, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        wr.writerow(["phi","theta","alpha" ,"freq","mag","date_time","time_stamp"]) # writing csv header
-        for i in range(0,len(mag)): # writing rolls for each direction
-            export_data=[phi[i]-phi_center,theta[i]-theta_center,alpha[i]-alpha_center,freq[i],mag[i],date_time[i],time_stamp[i]] #organizing data lines
-            print (export_data)
-            wr.writerow(export_data)
-    diagram.close() #closing file
+    elif (safe_copy == 1):
+        #saving a copy file for safety
+        copy_filename=strftime("DIAGRAMA_autosaved_date-%Y-%m-%d_time-%H-%M-%S.csv", localtime())
+        with open(copy_filename, mode='w', newline='') as diagram:
+            wr = csv.writer(diagram, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            wr.writerow(["phi","theta","alpha" ,"freq","mag","date_time","time_stamp"]) # writing csv header
+            for i in range(0,len(mag)): # writing rolls for each direction
+                export_data=[phi[i]-phi_center,theta[i]-theta_center,alpha[i]-alpha_center,freq[i],mag[i],date_time[i],time_stamp[i]] #organizing data lines
+                wr.writerow(export_data)
+        diagram.close() #closing file
+    else:
+        print('Invalid Option')
+        return -1
 
 
 # função 'reset'
