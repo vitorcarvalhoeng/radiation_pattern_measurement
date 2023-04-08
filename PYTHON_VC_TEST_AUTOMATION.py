@@ -334,7 +334,7 @@ def search_max(phi0,theta0,alpha0,freq):
     global num_samples, wait_time_phi,wait_time_all,margin_max, margin_step
     
     #setting frequency on instruments
-    f_center= float(freq)*1e9
+    f_center= float(freq)
     RF_gen.set_freq(f_center)
     SA.set_freq(f_center)
 
@@ -429,10 +429,16 @@ RF_gen.RF_off()
 filename = 'parameters_list.csv'
 phi, theta, alpha, freq = import_sequencing(filename)
 
-output_filename = 'output.csv'
+
 
 move_and_measure()
-export_csv(output_filename, False)
+
+if not os.path.exists('./results'):
+    os.makedirs('./results')
+
+output_filename = 'output.csv'
+
+export_csv('./results/' + output_filename, False)
 
 SA.disconnect_equip()
 RF_gen.disconnect_equip()
