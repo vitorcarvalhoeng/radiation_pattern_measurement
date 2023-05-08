@@ -15,6 +15,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import pyqtgraph as pg
 
+import threading
+
 # project functions
 
 import infos
@@ -45,6 +47,7 @@ time_stamp=[]
 date_time=[]
 
 first_measure=True
+first_plot = True
 
 #----------FUNCTIONS----------------------------
 
@@ -78,7 +81,7 @@ def measure(num_samples): # measurement equipment control
 # não recebe argumentos, utiliza as variáveis globais, configuradas por outras funções
 # não retorna valores, modifica as variáveis globais
 
-def move_and_measure():
+def move_and_measure(event):
     global freq
     global time_stamp, date_time, wait_time_all
     global phi, theta, alpha
@@ -120,6 +123,8 @@ def move_and_measure():
         time_stamp.append(datetime.timestamp(date_time[i])) # getting the timestamp
 
         export_csv('a',True)
+        event.set()
+        
 
     RF_gen.RF_off() #turning off RF output
     
@@ -207,32 +212,53 @@ def update_configs(): # update global configuration variables with information f
 # função plota diagrama 2D no eixo disponível na UI
 # utiliza variáveis globais
 
-def plot_2d(final):
+def plot_2d(event,dummy):
     global phi, theta, alpha, mag
-    global axis_options1
-    global ui
+    global first_plot
 
-    #ref: https://matplotlib.org/tutorials/introductory/pyplot.html
-    switcher = { # executing axis choice 
-        1: [phi, r'$\phi$'],
-        2: [theta, r'$\theta$'],
-        3: [alpha, r'$\alpha$']
-    }
-    axis,axis_label= switcher.get(axis_options1, "Invalid axis options")
+    print('fhsdjkfhsdkfjhasdkfjhasdkjfh')
+    if first_plot:
+        plt.ion()
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        line1, = ax.plot(phi[0:len(mag)], mag, 'b-')
+        ax.set_xlim([0, 10])
+        ax.set_ylim([0, 100])
+        first_plot = False
+
     
-    phi_center, theta_center, alpha_center = infos.load_cal()
+    event.wait()
+    print('plotando...')
+    # line1.set_ydata(np.sin(0.5 * x + phase))
+    line1.set_data(phi[0:len(mag)],mag)
+    fig.canvas.draw()
+    fig.canvas.flush_events()
 
 
-    # applying reference offset
-    if axis==phi:
-        axis_show = [x - phi_center for x in phi]
-    elif axis==theta:
-        axis_show = [x - theta_center for x in theta]
-    elif axis==alpha:
-        axis_show = [x - alpha_center for x in alpha]
+    # global axis_options1
+    # global ui
+
+    # #ref: https://matplotlib.org/tutorials/introductory/pyplot.html
+    # switcher = { # executing axis choice 
+    #     1: [phi, r'$\phi$'],
+    #     2: [theta, r'$\theta$'],
+    #     3: [alpha, r'$\alpha$']
+    # }
+    # axis,axis_label= switcher.get(axis_options1, "Invalid axis options")
+    
+    # phi_center, theta_center, alpha_center = infos.load_cal()
+
+
+    # # applying reference offset
+    # if axis==phi:
+    #     axis_show = [x - phi_center for x in phi]
+    # elif axis==theta:
+    #     axis_show = [x - theta_center for x in theta]
+    # elif axis==alpha:
+    #     axis_show = [x - alpha_center for x in alpha]
 
   
-    ui.graphicsView_diagram.plot(axis_show,mag, pen=pg.mkPen('b', width=5)) #x,y
+    # ui.graphicsView_diagram.plot(axis_show,mag, pen=pg.mkPen('b', width=5)) #x,y
     # plot = ui.graphicsView_diagram
     # for r in range(-90,-30,10):
     #     circle=pg.QtGui.QGraphicsEllipseItem(-r,-r,r*2,r*2)
@@ -249,8 +275,8 @@ def plot_2d(final):
     # plot.plot(x,y)
 
     #plot.refresh_text_box()
-    ui.graphicsView_diagram.plot(axis_show,mag, pen=pg.mkPen('b', width=5)) #x,y
-    ui.refresh_text_box()
+    # ui.graphicsView_diagram.plot(axis_show,mag, pen=pg.mkPen('b', width=5)) #x,y
+    # ui.refresh_text_box()
 
 
 
@@ -425,8 +451,11 @@ filename = 'parameters_list.csv'
 phi, theta, alpha, freq = import_sequencing(filename)
 
 
+event = threading.Event()
+x = threading.Thread(target=plot_2d, args=(event,1))
+x.start()
 
-move_and_measure()
+move_and_measure(event)
 
 if not os.path.exists('./results'):
     os.makedirs('./results')
