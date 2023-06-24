@@ -81,7 +81,7 @@ def measure(num_samples): # measurement equipment control
 # não recebe argumentos, utiliza as variáveis globais, configuradas por outras funções
 # não retorna valores, modifica as variáveis globais
 
-def move_and_measure(event):
+def move_and_measure():
     global freq
     global time_stamp, date_time, wait_time_all
     global phi, theta, alpha
@@ -123,7 +123,7 @@ def move_and_measure(event):
         time_stamp.append(datetime.timestamp(date_time[i])) # getting the timestamp
 
         export_csv('a',True)
-        event.set()
+        plot_2d()
         
 
     RF_gen.RF_off() #turning off RF output
@@ -212,85 +212,20 @@ def update_configs(): # update global configuration variables with information f
 # função plota diagrama 2D no eixo disponível na UI
 # utiliza variáveis globais
 
-def plot_2d(event,dummy):
+def plot_2d():
     global phi, theta, alpha, mag
     global first_plot
 
-    print('fhsdjkfhsdkfjhasdkfjhasdkjfh')
-    if first_plot:
-        plt.ion()
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        line1, = ax.plot(phi[0:len(mag)], mag, 'b-')
-        ax.set_xlim([0, 10])
-        ax.set_ylim([0, 100])
-        first_plot = False
-
-    
-    event.wait()
+ 
     print('plotando...')
-    # line1.set_ydata(np.sin(0.5 * x + phase))
-    line1.set_data(phi[0:len(mag)],mag)
-    fig.canvas.draw()
-    fig.canvas.flush_events()
-
-
-    # global axis_options1
-    # global ui
-
-    # #ref: https://matplotlib.org/tutorials/introductory/pyplot.html
-    # switcher = { # executing axis choice 
-    #     1: [phi, r'$\phi$'],
-    #     2: [theta, r'$\theta$'],
-    #     3: [alpha, r'$\alpha$']
-    # }
-    # axis,axis_label= switcher.get(axis_options1, "Invalid axis options")
     
-    # phi_center, theta_center, alpha_center = infos.load_cal()
+    # clear axis
+    ax.clear()
+    ax.plot(phi[0:len(mag)],mag)
 
-
-    # # applying reference offset
-    # if axis==phi:
-    #     axis_show = [x - phi_center for x in phi]
-    # elif axis==theta:
-    #     axis_show = [x - theta_center for x in theta]
-    # elif axis==alpha:
-    #     axis_show = [x - alpha_center for x in alpha]
-
-  
-    # ui.graphicsView_diagram.plot(axis_show,mag, pen=pg.mkPen('b', width=5)) #x,y
-    # plot = ui.graphicsView_diagram
-    # for r in range(-90,-30,10):
-    #     circle=pg.QtGui.QGraphicsEllipseItem(-r,-r,r*2,r*2)
-    #     circle.setPen(pg.mkPen(0.2))
-    #     plot.addItem(circle)
-
-
-    # th = np.deg2rad(phi)
-    # radius = mag
-
-    # x=radius*np.cos(th)
-    # y=radius*np.sin(th)
-
-    # plot.plot(x,y)
-
-    #plot.refresh_text_box()
-    # ui.graphicsView_diagram.plot(axis_show,mag, pen=pg.mkPen('b', width=5)) #x,y
-    # ui.refresh_text_box()
-
-
-
-    '''plt.ylabel('E')
-    plt.xlabel(str(axis_label))
-    plt.ion() # enable interactivity
     plt.show()
-    plt.draw()
-    plt.pause(0.25)
-    if not final: # if it is still running
-        plt.clf() #clear previous plot
-    else: # if the measurement has finished
-        plt.savefig('graph_2D.png') #save fig
-        plt.show(block=True) # hold the graph'''
+    plt.pause(0.0001)
+
         
 
 # função plota diagrama 3D em janela extra
@@ -450,12 +385,14 @@ RF_gen.RF_off()
 filename = 'parameters_list.csv'
 phi, theta, alpha, freq = import_sequencing(filename)
 
+# define and adjust figure
+plt.ion()
+fig = plt.figure(figsize=(12,6), facecolor='#DEDEDE')
+ax = plt.subplot(121)
+ax.set_facecolor('#DEDEDE')
 
-event = threading.Event()
-x = threading.Thread(target=plot_2d, args=(event,1))
-x.start()
 
-move_and_measure(event)
+move_and_measure()
 
 if not os.path.exists('./results'):
     os.makedirs('./results')
