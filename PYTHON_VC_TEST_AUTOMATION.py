@@ -16,10 +16,10 @@ import matplotlib.pyplot as plt
 import pyqtgraph as pg
 
 import threading
+import configparser
 
 # project functions
 
-import infos
 from aux_functions import sph2cart, float_range
                 
 import SCPI_devices
@@ -32,8 +32,34 @@ print(" ")
 
 
 #---------------INPUTS--------------------------------
-freq_span = 100e3
-num_samples, wait_time_phi,wait_time_all,margin_max, margin_step = infos.load_config()
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+# num_samples = config.get("MEASUREMENT","num_samples")
+
+cal_dict = dict(config.items("CALIBRATION"))
+phi_center = int(cal_dict["phi"])
+theta_center = int(cal_dict["theta"])
+alpha_center = int(cal_dict["alpha"])
+margin_max = int(cal_dict["margin_max"])
+margin_step = int(cal_dict["margin_step"])
+
+limits_dict = dict(config.items("LIMITS"))
+phi_min = int(limits_dict["phi_min"])
+theta_min = int(limits_dict["theta_min"])
+alpha_min = int(limits_dict["alpha_min"])
+phi_max = int(limits_dict["phi_max"])
+theta_max = int(limits_dict["theta_max"])
+alpha_max = int(limits_dict["alpha_max"])
+
+meas_dict = dict(config.items("MEASUREMENT"))
+num_samples = int(meas_dict["num_samples"])
+wait_time = float(meas_dict["wait_time"])
+freq_span = int(meas_dict["freq_span"])
+
+plot_dict = dict(config.items("PLOT"))
+plot_enable = bool(config.getboolean('PLOT','plot_enable'))
+plot_2d_var = str(plot_dict["var_2d"])
 
 #----------INITIALIZING VARIABLES----------------------------
 
@@ -83,11 +109,11 @@ def measure(num_samples): # measurement equipment control
 
 def move_and_measure():
     global freq
-    global time_stamp, date_time, wait_time_all
+    global time_stamp, date_time, wait_time
     global phi, theta, alpha
     global mag
 
-    phi_center, theta_center, alpha_center = infos.load_cal()
+    global phi_center, theta_center, alpha_center
 
     # applying reference offset
     phi_show = [x - phi_center for x in phi]
@@ -103,8 +129,8 @@ def move_and_measure():
     for i in range(0, len(phi)): # values area appended to the general table
         positioner.set_position(phi[i],theta[i],alpha[i])
         
-        print("Waiting "+str(wait_time_all)+" seconds (all)")
-        sleep(wait_time_all) #waiting
+        print("Waiting "+str(wait_time)+" seconds (all)")
+        sleep(wait_time) #waiting
 
         RF_gen.set_freq(int(freq[i]))
 
@@ -123,7 +149,8 @@ def move_and_measure():
         time_stamp.append(datetime.timestamp(date_time[i])) # getting the timestamp
 
         export_csv('a',True)
-        plot_2d()
+        if plot_enable:
+            plot_2d()
         
 
     RF_gen.RF_off() #turning off RF output
@@ -157,7 +184,7 @@ def export_csv(filename, safe_copy): # file export function
     global mag, phi, theta, alpha, freq
     global date_time, time_stamp
 
-    phi_center, theta_center, alpha_center = infos.load_cal()
+    global phi_center, theta_center, alpha_center
 
     #remaping angles from center calibration
 
@@ -202,11 +229,6 @@ def reset():
 
     first_measure = True
 
-
-def update_configs(): # update global configuration variables with information from csv file
-    global num_samples, wait_time_phi,wait_time_all,margin_max, margin_step
-    num_samples, wait_time_phi,wait_time_all,margin_max, margin_step = infos.load_config()
-
 #-------------------plots-------------------
 
 # função plota diagrama 2D no eixo disponível na UI
@@ -221,7 +243,15 @@ def plot_2d():
     
     # clear axis
     ax.clear()
-    ax.plot(phi[0:len(mag)],mag)
+    if plot_2d_var == "phi":
+        ax.plot(phi[0:len(mag)],mag)
+    elif plot_2d_var == "theta":
+        ax.plot(theta[0:len(mag)],mag)
+    elif plot_2d_var == "alpha":
+        ax.plot(alpha[0:len(mag)],mag)
+    else:
+        print("Variável de plotagem invalida")
+
 
     plt.show()
     plt.pause(0.0001)
@@ -287,7 +317,7 @@ def plot_3d(init,final):
 
 
 def search_max(phi0,theta0,alpha0,freq):
-    global num_samples, wait_time_phi,wait_time_all,margin_max, margin_step
+    global num_samples, wait_time,margin_max, margin_step,phi_max, phi_min, theta_max, theta_min, alpha_max, alpha_min
     
     #setting frequency on instruments
     f_center= float(freq)
@@ -295,18 +325,6 @@ def search_max(phi0,theta0,alpha0,freq):
     SA.set_freq(f_center)
 
     RF_gen.RF_on() #turning RF on
-
-    #stablishing limits for search on axis
-    phi_min=0
-    phi_max=360
-
-    theta_min=0
-    apont_equip=infos.load_equip()
-
-    if apont_equip=="PI2":
-        theta_max=100
-    elif apont_equip == "rotor":
-        theta_max=180
 
     #margins for searching
     range_phi_d=margin_max
@@ -339,7 +357,7 @@ def search_max(phi0,theta0,alpha0,freq):
     #for phi in range(phi0-range_phi_d,phi0+range_phi_u,1):
     for phi in float_range(int(phi0-range_phi_d),phi0+range_phi_u,str(margin_step)):
         positioner.set_position(phi, theta0, alpha0)
-        sleep(wait_time_all) # settling time
+        sleep(wait_time) # settling time
         phi_test.append(phi)
         mag_test.append(measure(num_samples))
 
@@ -355,7 +373,7 @@ def search_max(phi0,theta0,alpha0,freq):
     #for theta in range(theta0-range_theta_d,theta0+range_theta_u,1):
     for theta in float_range(int(theta0-range_theta_d),theta0+range_theta_u,str(margin_step)):
         positioner.set_position(phi_max, theta, alpha0)
-        sleep(wait_time_all) # settling time
+        sleep(wait_time) # settling time
         theta_test.append(theta)
         mag_test.append(measure(num_samples))
 
@@ -385,11 +403,12 @@ RF_gen.RF_off()
 filename = 'parameters_list.csv'
 phi, theta, alpha, freq = import_sequencing(filename)
 
-# define and adjust figure
-plt.ion()
-fig = plt.figure(figsize=(12,6), facecolor='#DEDEDE')
-ax = plt.subplot(121)
-ax.set_facecolor('#DEDEDE')
+if plot_enable:
+    # define and adjust figure
+    plt.ion()
+    fig = plt.figure(figsize=(12,6), facecolor='#DEDEDE')
+    ax = plt.subplot(121)
+    ax.set_facecolor('#DEDEDE')
 
 
 move_and_measure()
