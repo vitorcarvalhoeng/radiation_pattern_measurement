@@ -41,8 +41,8 @@ cal_dict = dict(config.items("CALIBRATION"))
 phi_center = int(cal_dict["phi"])
 theta_center = int(cal_dict["theta"])
 alpha_center = int(cal_dict["alpha"])
-margin_max = int(cal_dict["margin_max"])
-margin_step = int(cal_dict["margin_step"])
+margin_max = float(cal_dict["margin_max"])
+margin_step = float(cal_dict["margin_step"])
 
 limits_dict = dict(config.items("LIMITS"))
 phi_min = int(limits_dict["phi_min"])
@@ -353,34 +353,25 @@ def search_max(phi0,theta0,alpha0,freq):
 
     mag_test=[]
     phi_test=[]
+    theta_test=[]
   
     #for phi in range(phi0-range_phi_d,phi0+range_phi_u,1):
     for phi in float_range(int(phi0-range_phi_d),phi0+range_phi_u,str(margin_step)):
-        positioner.set_position(phi, theta0, alpha0)
-        sleep(wait_time) # settling time
-        phi_test.append(phi)
-        mag_test.append(measure(num_samples))
+        for theta in float_range(int(theta0-range_theta_d),theta0+range_theta_u,str(margin_step)):
+            positioner.set_position(phi, theta, alpha0)
+            sleep(wait_time) # settling time
+            phi_test.append(phi)
+            theta_test.append(theta)
+            mag_test.append(measure(num_samples))
+
 
     index_max=np.argmax(mag_test)
     phi_max=phi_test[index_max]
-    print("phi max = " + str(phi_max))
-
-    #theta sweep
-    #finding the maximum measured magnitude on theta axis aroung theta0, on the phi_max position
-    mag_test=[]
-    theta_test=[]
-
-    #for theta in range(theta0-range_theta_d,theta0+range_theta_u,1):
-    for theta in float_range(int(theta0-range_theta_d),theta0+range_theta_u,str(margin_step)):
-        positioner.set_position(phi_max, theta, alpha0)
-        sleep(wait_time) # settling time
-        theta_test.append(theta)
-        mag_test.append(measure(num_samples))
-
-    index_max=np.argmax(mag_test)
     theta_max=theta_test[index_max]
+    print("phi max = " + str(phi_max))
     print("theta max = " + str(theta_max))
 
+   
     RF_gen.RF_off() #turning RF off
 
     return phi_max,theta_max

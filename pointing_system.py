@@ -27,7 +27,12 @@ import serial
 import time
 import threading
 import csv
-import infos
+
+import configparser
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+limits_dict = dict(config.items("LIMITS"))
 
 
 # Inicia a conexão serial com o equipamento apontador
@@ -63,7 +68,10 @@ def disconnect(ser):
 def Gcode_G1(coordinate): 
 
     # physical limit of axil respectively X,Y and Z
-    x,y,z=infos.load_limits()
+
+    x = int(limits_dict["phi_max"])
+    y = int(limits_dict["theta_max"])
+    z = int(limits_dict["alpha_max"])
     #physical_limit = [360, 100, 360]
     physical_limit = [x, y, z]
     variable_name = ['X', 'Y', 'Z', 'F']
